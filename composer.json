@@ -1,0 +1,19 @@
+{
+    "name": "linestorm/search-bundle",
+    "description": "Search Module for LineStorm CMS",
+    "require": {
+        "php": ">=5.3.0",
+        "symfony/symfony": ">=2.3"
+    },
+    "authors": [
+        {
+            "name": "Andy Thorne",
+            "email": "contrabandvr@gmail.com",
+            "homepage": "http://www.andy-thorne.co.uk"
+        }
+    ],
+    "autoload": {
+        "psr-0": {"LineStorm\\": "src/"}
+    },
+    "minimum-stability": "dev"
+}
