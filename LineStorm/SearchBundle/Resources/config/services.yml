@@ -1,3 +1,7 @@
-parameters: ~
+parameters:
+  linestorm.cms.module.search_manager.class:            LineStorm\SearchBundle\Search\SearchRepositoryManager
+  linestorm.cms.module.search.provider.tri_graph.class: LineStorm\SearchBundle\Search\Provider\TriGraphSearchProvider
 
-services: ~
+services: 
+  linestorm.cms.module.search_manager:
+    class: %linestorm.cms.module.search_manager.class%

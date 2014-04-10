@@ -1,0 +1,45 @@
+{% extends 'LineStormCmsBundle:Admin:index.html.twig' %}
+
+{% block page_title %}Search Providers{% endblock %}
+
+{% import _self as fn %}
+{% macro imageItem () %}
+    {% spaceless %}
+        <div class="col-lg-2 col-md-3 col-sm-6 col-xs-12 ">
+            <a href="__id__/edit" class="thumbnail preview">
+                <img data-src="holder.js/100%x180" src="__src__">
+                <div class="caption">
+                    <p>__title__</p>
+                </div>
+            </a>
+        </div>
+    {% endspaceless %}
+{% endmacro %}
+
+{% block module %}
+    <div class="alert alert-info">
+        <p class="">
+            <i class="fa-exclamation-circle"></i>
+            Search providers will index content, making full text searchable where it may not be avaliable already.
+        </p>
+    </div>
+
+    <ul class="list-group">
+        {% for provider in providers %}
+            <li class="list-group-item">
+                <h3 class="list-group-item-heading">{{ provider.name }}</h3>
+                <div class="list-group-item-text">
+                    <p class="text-muted">
+                        <strong>Indexed Fields:</strong>
+                        {% for field,mappings in provider.indexFields %}{{ field }}{% if not loop.last %}, {% endif %}{% endfor %}
+                    </p>
+                    <p class="text-muted">
+                        <strong>Row Count:</strong>
+                        {{ provider.count }}
+                    </p>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+
+{% endblock %}

@@ -13,7 +13,7 @@
         }
     ],
     "autoload": {
-        "psr-0": {"LineStorm\\": "src/"}
+        "psr-0": {"LineStorm\\": ""}
     },
     "minimum-stability": "dev"
 }

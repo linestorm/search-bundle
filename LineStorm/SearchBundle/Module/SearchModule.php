@@ -1,14 +1,16 @@
 <?php
 
-namespace LineStorm\MediaBundle\Module;
+namespace LineStorm\SearchBundle\Module;
 
 use LineStorm\CmsBundle\Module\AbstractModule;
 use LineStorm\CmsBundle\Module\ModuleInterface;
 use Symfony\Component\Config\Loader\Loader;
+use Symfony\Component\Routing\RouteCollection;
 
 /**
  * Class SearchModule
- * @package LineStorm\MediaBundle\Module
+ *
+ * @package LineStorm\SearchBundle\Module
  */
 class SearchModule extends AbstractModule implements ModuleInterface
 {
@@ -23,18 +25,18 @@ class SearchModule extends AbstractModule implements ModuleInterface
     public function getNavigation()
     {
         return array(
-
+            'View Providers' => array('linestorm_cms_admin_module_search_list', array())
         );
     }
 
     /**
-     * Thr route to load as 'home'
+     * The route to load as 'home'
      *
      * @return string
      */
     public function getHome()
     {
-        return '';
+        return 'linestorm_cms_admin_module_search_list';
     }
 
     /**
@@ -42,7 +44,8 @@ class SearchModule extends AbstractModule implements ModuleInterface
      */
     public function addRoutes(Loader $loader)
     {
-        return $loader->import('@LineStormSearchBundle/Resources/config/routing/frontend.yml', 'rest');
+        return new RouteCollection();
+        //return $loader->import('@LineStormSearchBundle/Resources/config/routing/frontend.yml', 'rest');
     }
 
     /**

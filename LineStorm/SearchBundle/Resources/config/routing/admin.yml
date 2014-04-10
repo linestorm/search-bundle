@@ -1,0 +1,20 @@
+linestorm_cms_admin_module_search_list:
+    pattern:  /
+    defaults: { _controller: LineStormSearchBundle:Admin:list }
+
+linestorm_cms_admin_module_search_create:
+    pattern:  /new
+    defaults: { _controller: LineStormSearchBundle:Admin:new }
+
+linestorm_cms_admin_module_search_view:
+    pattern:  /{id}
+    defaults: { _controller: LineStormSearchBundle:Admin:view }
+    requirements:
+       id: \d+
+
+linestorm_cms_admin_module_search_edit:
+    pattern:  /{id}/edit
+    defaults: { _controller: LineStormSearchBundle:Admin:edit }
+    requirements:
+       id: \d+
+
