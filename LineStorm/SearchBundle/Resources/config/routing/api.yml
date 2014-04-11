@@ -1,0 +1,4 @@
+linestorm_cms_module_search_api_controller:
+    type:     rest
+    resource: LineStorm\SearchBundle\Controller\Api\SearchController
+    name_prefix:  linestorm_cms_module_search_api_

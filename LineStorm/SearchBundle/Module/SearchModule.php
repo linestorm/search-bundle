@@ -44,8 +44,7 @@ class SearchModule extends AbstractModule implements ModuleInterface
      */
     public function addRoutes(Loader $loader)
     {
-        return new RouteCollection();
-        //return $loader->import('@LineStormSearchBundle/Resources/config/routing/frontend.yml', 'rest');
+        return $loader->import('@LineStormSearchBundle/Resources/config/routing/frontend.yml', 'rest');
     }
 
     /**

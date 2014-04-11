@@ -5,6 +5,7 @@ namespace LineStorm\SearchBundle\Search\Provider;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Query\Expr\Join;
+use Doctrine\ORM\Query;
 use LineStorm\SearchBundle\Model\TriGraph;
 use LineStorm\SearchBundle\Search\AbstractSearchProvider;
 
@@ -28,7 +29,7 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
     /**
      * @inheritdoc
      */
-    public function search($query)
+    public function search($query, $hydration = Query::HYDRATE_OBJECT)
     {
         $sqlParts = $this->parseText($query);
 
@@ -42,7 +43,7 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
         }
 
         $query  = $qb->getQuery();
-        $result = $query->setMaxResults(20)->getResult();
+        $result = $query->setMaxResults(20)->getResult($hydration);
 
         return $result;
     }

@@ -1,0 +1,4 @@
+linestorm_cms_module_search_api:
+  prefix:   /api
+  type:     rest
+  resource: "api.yml"

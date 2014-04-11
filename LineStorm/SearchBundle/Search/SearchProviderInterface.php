@@ -2,6 +2,7 @@
 
 namespace LineStorm\SearchBundle\Search;
 
+use Doctrine\ORM\Query;
 use LineStorm\CmsBundle\Model\ModelManager;
 
 /**
@@ -42,13 +43,21 @@ interface SearchProviderInterface
     public function getIndexFields();
 
     /**
+     * Gets a cound of all indices
+     *
+     * @return int
+     */
+    public function getCount();
+
+    /**
      * Search the provider for a query
      *
      * @param $query
+     * @param $hydration
      *
      * @return array Collection of entities
      */
-    public function search($query);
+    public function search($query, $hydration = Query::HYDRATE_OBJECT);
 
     /**
      * Index the target model

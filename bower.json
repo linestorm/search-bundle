@@ -1,0 +1,21 @@
+{
+    "name": "search-bundle",
+    "description": "Search Bundel for LineStorm CMS",
+    "version": "1.0.0",
+    "authors": [
+        "Andy Thorne <contrabandvr@gmail.com>"
+    ],
+    "license": "MIT",
+    "private": true,
+    "dependencies": {
+        "bootstrap": ">= 3.0.0",
+        "typeahead": ">= 0.10.0"
+    },
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "test",
+        "tests"
+    ]
+}
