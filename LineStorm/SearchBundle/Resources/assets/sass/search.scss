@@ -1,0 +1,25 @@
+.search-container {
+
+    .search-results {
+        position: absolute;
+        background-color: #fff;
+        padding: 10px 10px 0 10px;
+        width: 100%;
+        border: 1px solid #ccc;
+        box-shadow: 0 3px 5px #ccc;
+        display: none;
+
+        .results-row {
+            border-bottom: 1px solid #dedede;
+            margin-bottom: 10px;
+        }
+    }
+
+    .search-spinner {
+        position: absolute;
+        right: 10px;
+        top: 8px;
+        display: none;
+    }
+
+}

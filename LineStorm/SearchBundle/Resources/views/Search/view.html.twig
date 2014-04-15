@@ -1,2 +1,10 @@
-<input type="text" placeholder="Search..." class="form-control" value="" data-url="{{ path
-('linestorm_cms_module_search_api_get_search', {provider : 'post'}) }}" />
+<div class="search-container navbar-form">
+
+    <div class="input-group">
+        <input type="text" placeholder="Search..." class="form-control linestorm-search" value="" data-url="{{ path('linestorm_cms_module_search_api_get_search', {provider : 'post'}) }}" />
+        <div class="search-spinner"><i class="fa-refresh fa-spin"></i></div>
+    </div>
+    <div class="search-results">
+
+    </div>
+</div>

@@ -6,6 +6,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\ORM\Query;
+use Doctrine\ORM\QueryBuilder;
 use LineStorm\SearchBundle\Model\TriGraph;
 use LineStorm\SearchBundle\Search\AbstractSearchProvider;
 
@@ -29,13 +30,22 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
     /**
      * @inheritdoc
      */
+    public function queryBuilder(QueryBuilder $qb, $alias)
+    {}
+
+    /**
+     * @inheritdoc
+     */
     public function search($query, $hydration = Query::HYDRATE_OBJECT)
     {
         $sqlParts = $this->parseText($query);
 
+        $alias = 't';
         $repo          = $this->modelManager->get($this->getName());
         $triGraphClass = $this->modelManager->get($this->getTriGraph())->getClassName();
-        $qb            = $repo->createQueryBuilder('t');
+        $qb            = $repo->createQueryBuilder($alias);
+
+        $this->queryBuilder($qb, $alias);
 
         foreach ($sqlParts as $i => $sqlPart)
         {

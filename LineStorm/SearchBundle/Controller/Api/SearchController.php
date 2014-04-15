@@ -37,6 +37,12 @@ class SearchController extends AbstractApiController implements ClassResourceInt
             if(strlen($query) >= 5)
             {
                 $entities = $provider->search($query, Query::HYDRATE_ARRAY);
+
+                foreach($entities as &$entity)
+                {
+                    $entity['data_url'] = call_user_func_array(array($this, 'generateUrl'), $provider->getRoute($entity));
+                }
+
                 $view = View::create($entities);
             }
             else
