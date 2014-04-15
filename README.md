@@ -16,13 +16,11 @@ This module will provide functionality to post blog type content to the LineStor
 Step 1: Download bundle using composer
 --------------------------------------
 
-Add `linestorm/post-bundle` to your `composer.json` file, or download it by running the command:
+Add `linestorm/search-bundle` to your `composer.json` file, or download it by running the command:
 
 ```bash
-$ php composer.phar require linestorm/post-bundle
+$ php composer.phar require linestorm/search-bundle
 ```
-
-Composer will install the bundle to your project's vendor/sp directory.
 
 Step 2: Enable the bundle
 -------------------------
@@ -34,8 +32,7 @@ public function registerBundles()
 {
     $bundles = array(
         // ...
-        new LineStorm\BlogPostBundle\BlogPostBundle(),
-        new LineStorm\MediaBundle\MediaBundle(),
+        new LineStorm\SearchBundle\BlogPostBundle(),
     );
 }
 ```
