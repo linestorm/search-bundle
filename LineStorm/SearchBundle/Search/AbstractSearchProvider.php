@@ -23,12 +23,4 @@ abstract class AbstractSearchProvider
     {
         $this->modelManager = $modelManager;
     }
-
-    /**
-     * @inheritdoc
-     */
-    public function getName()
-    {
-        throw new \Exception("You must extend getName()");
-    }
 } 

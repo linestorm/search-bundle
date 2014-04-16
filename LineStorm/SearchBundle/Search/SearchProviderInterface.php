@@ -62,7 +62,18 @@ interface SearchProviderInterface
     /**
      * Index the target model
      *
+     * @param null|array|object $entities If supplied, will only index this/these entities
+     *
      * @return void
      */
-    public function index();
+    public function index($entities = null);
+
+    /**
+     * Remove an index from the index
+     *
+     * @param object $entity
+     *
+     * @return void
+     */
+    public function remove($entity);
 } 

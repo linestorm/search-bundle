@@ -3,31 +3,26 @@
 namespace LineStorm\SearchBundle\Search\Provider;
 
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\EntityManager;
-use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\ORM\Query;
 use Doctrine\ORM\QueryBuilder;
-use LineStorm\SearchBundle\Model\TriGraph;
 use LineStorm\SearchBundle\Search\AbstractSearchProvider;
-use LineStorm\SearchBundle\Search\Exception\EntityNotSupportedException;
+use LineStorm\SearchBundle\Search\SearchProviderInterface;
 
 /**
- * Class TriGraphSearchProvider
+ * Class MyIsamFullTextSearchProvider
  *
  * @package LineStorm\SearchBundle\Search\Provider
  */
-abstract class TriGraphSearchProvider extends AbstractSearchProvider
+abstract class FullTextSearchProvider extends AbstractSearchProvider implements SearchProviderInterface
 {
     private $rowCount;
-
-    protected $inverseField;
 
     /**
      * @inheritdoc
      */
     public function getType()
     {
-        return 'tri_graph';
+        return 'full_text';
     }
 
     /**
@@ -38,36 +33,8 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
     /**
      * @inheritdoc
      */
-    abstract public function getTriGraph();
-
-    /**
-     * @inheritdoc
-     */
     public function queryBuilder(QueryBuilder $qb, $alias)
-    {
-    }
-
-    /**
-     * Get meta info for the trigraph
-     */
-    protected function getInverseSide()
-    {
-        if(!$this->inverseField)
-        {
-            $em            = $this->modelManager->getManager();
-            $triGraphClass = $this->modelManager->get($this->getTriGraph())->getClassName();
-            $meta          = $em->getClassMetadata($triGraphClass);
-
-            $mappings = $meta->getAssociationMappings();
-            foreach($mappings as $name => $mapping)
-            {
-                $this->inverseField = $name;
-                break;
-            }
-        }
-
-        return $this->inverseField;
-    }
+    {}
 
 
     /**
@@ -75,22 +42,33 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
      */
     public function search($query, $hydration = Query::HYDRATE_OBJECT)
     {
-        $sqlParts = $this->parseText($query);
-
         $alias         = 't';
         $repo          = $this->modelManager->get($this->getName());
-        $triGraphClass = $this->modelManager->get($this->getTriGraph())->getClassName();
         $qb            = $repo->createQueryBuilder($alias);
-        $inverse       = $this->getInverseSide();
 
         $this->queryBuilder($qb, $alias);
 
-        foreach($sqlParts as $i => $sqlPart)
+        $i = 0;
+        foreach($this->getIndexFields() as $field => $properties)
         {
-            $qb->join($triGraphClass, "tri{$i}", Join::WITH, "t = tri{$i}.{$inverse} AND tri{$i}.tuple = '{$sqlPart}'");
+            if(is_array($properties))
+            {
+                $idx = "i{$i}";
+                $qb->leftJoin($alias.'.'.$field, $idx)->addSelect($idx);
+                ++$i;
+                foreach($properties as $subField)
+                {
+                    $qb->orWhere("{$idx}.{$subField} LIKE :query");
+                }
+            }
+            else
+            {
+                $qb->orWhere("{$alias}.{$field} LIKE :query");
+            }
         }
 
-        $query  = $qb->getQuery();
+        $query  = $qb->getQuery()->setParameter('query', "%{$query}%");
+
         $result = $query->setMaxResults(20)->getResult($hydration);
 
         return $result;
@@ -104,7 +82,6 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
         $em      = $this->modelManager->getManager();
         $repo    = $this->modelManager->get($this->getName());
         $triRepo = $this->modelManager->get($this->getTriGraph());
-        $inverse = $this->getInverseSide();
 
         $className = $repo->getClassName();
         if($entities instanceof $className)
@@ -126,8 +103,8 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
 
             /** @var TriGraph $truple */
             $deleteQb = $triRepo->createQueryBuilder('t');
-            $deleteQb->delete()->where("t.{$inverse} = :inv");
-            $deleteQb->setParameter(':inv', $entity);
+            $deleteQb->delete()->where("t.entity = :entity");
+            $deleteQb->setParameter(':entity', $entity);
 
             $deleteQb->getQuery()->execute();
 
@@ -200,55 +177,4 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
         return $this->rowCount;
     }
 
-    /**
-     * Parse a text body into tuples
-     *
-     * @param $text
-     *
-     * @return array
-     */
-    protected function parseText($text)
-    {
-        $parts    = explode(' ', strtolower($text));
-        $sqlParts = array();
-        foreach($parts as $part)
-        {
-            if(strlen($part))
-            {
-                $clean = preg_replace('/[^\w\d]/', '', $part);
-                if(strlen($clean))
-                {
-                    $splits = str_split($clean, 3);
-                    foreach($splits as $split)
-                    {
-                        if(strlen($split) === 3)
-                        {
-                            $sqlParts[] = $split;
-                        }
-                    }
-                }
-            }
-        }
-
-        return $sqlParts;
-    }
-
-    /**
-     * Create a tuple entity for a base entity
-     *
-     * @param EntityManager $em
-     * @param object        $baseEntity
-     * @param string        $text
-     */
-    private function createTupleEntities(EntityManager $em, $baseEntity, $text)
-    {
-        $tuples = $this->parseText($text);
-        foreach($tuples as $tuple)
-        {
-            $tupleEntity = $this->modelManager->create($this->getTriGraph());
-            $tupleEntity->setTuple($tuple);
-            $tupleEntity->{"set{$this->getName()}"}($baseEntity);
-            $em->merge($tupleEntity);
-        }
-    }
 } 
