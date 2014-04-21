@@ -72,3 +72,18 @@ Documentation
 =============
 
 See [index.md](src/LineStorm/BlogPostBundle/Resources/doc/index.md)
+
+
+Full Text Implementations
+=========================
+
+Doctrine does not support full text searching, so if you are using a full text provider, you will need to add this to
+your `app/config/config.yml`
+
+``` yml
+doctrine:
+    orm:
+        dql:
+          string_functions:
+            MATCH_AGAINST: LineStorm\SearchBundle\Doctrine\Extension\MatchAgainst
+```

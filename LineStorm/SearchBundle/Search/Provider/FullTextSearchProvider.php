@@ -4,8 +4,12 @@ namespace LineStorm\SearchBundle\Search\Provider;
 
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Query;
+use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\ORM\QueryBuilder;
+use LineStorm\SearchBundle\Model\FullText;
 use LineStorm\SearchBundle\Search\AbstractSearchProvider;
+use LineStorm\SearchBundle\Search\Exception\EntityNotSupportedException;
+use LineStorm\SearchBundle\Search\Exception\FullTextIndexMissingException;
 use LineStorm\SearchBundle\Search\SearchProviderInterface;
 
 /**
@@ -30,11 +34,14 @@ abstract class FullTextSearchProvider extends AbstractSearchProvider implements 
      */
     abstract public function getRoute($entity);
 
+    abstract public function getIndexModel();
+
     /**
      * @inheritdoc
      */
     public function queryBuilder(QueryBuilder $qb, $alias)
-    {}
+    {
+    }
 
 
     /**
@@ -42,33 +49,25 @@ abstract class FullTextSearchProvider extends AbstractSearchProvider implements 
      */
     public function search($query, $hydration = Query::HYDRATE_OBJECT)
     {
-        $alias         = 't';
-        $repo          = $this->modelManager->get($this->getName());
-        $qb            = $repo->createQueryBuilder($alias);
+
+        $sqlParts = $this->parseText($query);
+
+        $alias      = 't';
+        $repo       = $this->modelManager->get($this->getModel());
+        $indexRepo  = $this->modelManager->get($this->getIndexModel());
+        $indexClass = $indexRepo->getClassName();
+        $qb         = $repo->createQueryBuilder($alias);
 
         $this->queryBuilder($qb, $alias);
 
-        $i = 0;
-        foreach($this->getIndexFields() as $field => $properties)
-        {
-            if(is_array($properties))
-            {
-                $idx = "i{$i}";
-                $qb->leftJoin($alias.'.'.$field, $idx)->addSelect($idx);
-                ++$i;
-                foreach($properties as $subField)
-                {
-                    $qb->orWhere("{$idx}.{$subField} LIKE :query");
-                }
-            }
-            else
-            {
-                $qb->orWhere("{$alias}.{$field} LIKE :query");
-            }
-        }
+        $search = implode(' ', $sqlParts);
+        $qb
+           ->join($indexClass, "idx", Join::WITH, "t = idx.entity")
+           ->andWhere("MATCH_AGAINST(idx.text, :query 'IN BOOLEAN MODE') > 0.0")
+           ->addGroupBy('t.id')
+           ->setParameter('query', $search);
 
-        $query  = $qb->getQuery()->setParameter('query', "%{$query}%");
-
+        $query  = $qb->getQuery();
         $result = $query->setMaxResults(20)->getResult($hydration);
 
         return $result;
@@ -79,9 +78,24 @@ abstract class FullTextSearchProvider extends AbstractSearchProvider implements 
      */
     public function index($entities = null)
     {
-        $em      = $this->modelManager->getManager();
-        $repo    = $this->modelManager->get($this->getName());
-        $triRepo = $this->modelManager->get($this->getTriGraph());
+        $em        = $this->modelManager->getManager();
+        $repo      = $this->modelManager->get($this->getModel());
+        $indexRepo = $this->modelManager->get($this->getIndexModel());
+
+        // first, we need to check this is actually fulltext table
+        $rsm = new Query\ResultSetMappingBuilder($em);
+        $rsm->addScalarResult('Index_type', 'type');
+        $rsm->addScalarResult('Key_name', 'key');
+
+        $meta = $em->getClassMetadata($indexRepo->getClassName());
+        $indexName = 'search_text_index';
+        $indexCheck = $em->createNativeQuery("SHOW INDEX FROM {$meta->getTableName()} WHERE KEY_NAME = '{$indexName}' AND Index_type='FULLTEXT'", $rsm);
+        $q = $indexCheck->execute();
+
+        if(!count($q))
+        {
+            throw new FullTextIndexMissingException($meta->getTableName(), $indexName, array('text'));
+        }
 
         $className = $repo->getClassName();
         if($entities instanceof $className)
@@ -101,14 +115,14 @@ abstract class FullTextSearchProvider extends AbstractSearchProvider implements 
         {
             $em->beginTransaction();
 
-            /** @var TriGraph $truple */
-            $deleteQb = $triRepo->createQueryBuilder('t');
+            $deleteQb = $indexRepo->createQueryBuilder('t');
             $deleteQb->delete()->where("t.entity = :entity");
             $deleteQb->setParameter(':entity', $entity);
 
             $deleteQb->getQuery()->execute();
 
-            foreach($this->getIndexFields() as $field => $properties)
+            /** @var FullText $indexEnitiy */
+            foreach($this->entityMappings as $field => $properties)
             {
                 if(is_array($properties))
                 {
@@ -119,18 +133,27 @@ abstract class FullTextSearchProvider extends AbstractSearchProvider implements 
                         {
                             foreach($subEntities as $subEntity)
                             {
-                                $this->createTupleEntities($em, $entity, $subEntity->{"get{$subField}"}());
+                                $indexEnitiy = $this->modelManager->create($this->getIndexModel());
+                                $indexEnitiy->setEntity($entity);
+                                $indexEnitiy->setText($subEntity->{"get{$subField}"}());
+                                $em->persist($indexEnitiy);
                             }
                         }
                         else
                         {
-                            $this->createTupleEntities($em, $entity, $subEntities->{"get{$subField}"}());
+                            $indexEnitiy = $this->modelManager->create($this->getIndexModel());
+                            $indexEnitiy->setEntity($entity);
+                            $indexEnitiy->setText($subEntities->{"get{$subField}"}());
+                            $em->persist($indexEnitiy);
                         }
                     }
                 }
                 else
                 {
-                    $this->createTupleEntities($em, $entity, $entity->{"get{$field}"}());
+                    $indexEnitiy = $this->modelManager->create($this->getIndexModel());
+                    $indexEnitiy->setEntity($entity);
+                    $indexEnitiy->setText($entity->{"get{$field}"}());
+                    $em->persist($indexEnitiy);
                 }
             }
 
@@ -146,15 +169,14 @@ abstract class FullTextSearchProvider extends AbstractSearchProvider implements 
     public function remove($entity)
     {
         $em      = $this->modelManager->getManager();
-        $triRepo = $this->modelManager->get($this->getTriGraph());
-        $inverse = $this->getInverseSide();
+        $triRepo = $this->modelManager->get($this->getIndexModel());
 
         $em->beginTransaction();
 
-        /** @var TriGraph $truple */
+        /** @var FullText $truple */
         $deleteQb = $triRepo->createQueryBuilder('t');
-        $deleteQb->delete()->where("t.{$inverse} = :inv");
-        $deleteQb->setParameter(':inv', $entity);
+        $deleteQb->delete()->where("t.entity = :entity");
+        $deleteQb->setParameter(':entity', $entity);
 
         $deleteQb->getQuery()->execute();
 
@@ -168,13 +190,39 @@ abstract class FullTextSearchProvider extends AbstractSearchProvider implements 
     {
         if($this->rowCount === null || !$fromCache)
         {
-            $repo = $this->modelManager->get($this->getTriGraph());
+            $repo = $this->modelManager->get($this->getIndexModel());
 
-            $qb             = $repo->createQueryBuilder('tri')->select('count(tri.tuple) as row_count');
+            $qb             = $repo->createQueryBuilder('i')->select('count(i.id) as row_count');
             $this->rowCount = (int)$qb->getQuery()->getSingleScalarResult();
         }
 
         return $this->rowCount;
+    }
+
+    /**
+     * Parse a text body into tuples
+     *
+     * @param $text
+     *
+     * @return array
+     */
+    protected function parseText($text)
+    {
+        $parts    = explode(' ', strtolower($text));
+        $sqlParts = array();
+        foreach($parts as $part)
+        {
+            if(strlen($part))
+            {
+                $clean = preg_replace('/[^\w\d]/', '', $part);
+                if(strlen($clean))
+                {
+                    $sqlParts[] = "+{$clean}";
+                }
+            }
+        }
+
+        return $sqlParts;
     }
 
 } 

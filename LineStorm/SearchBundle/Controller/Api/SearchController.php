@@ -6,6 +6,7 @@ use Doctrine\ORM\Query;
 use FOS\RestBundle\Routing\ClassResourceInterface;
 use FOS\RestBundle\View\View;
 use LineStorm\CmsBundle\Controller\Api\AbstractApiController;
+use LineStorm\CmsBundle\Response\ApiResponse;
 use LineStorm\SearchBundle\Search\Exception\SearchProviderNotFoundException;
 
 /**
@@ -36,7 +37,7 @@ class SearchController extends AbstractApiController implements ClassResourceInt
 
             if(strlen($query) >= 5)
             {
-                $entities = $provider->search($query, Query::HYDRATE_ARRAY);
+                $entities = $provider->search($query);
 
                 foreach($entities as &$entity)
                 {

@@ -3,7 +3,9 @@
   xmlns="http://doctrine-project.org/schemas/orm/doctrine-mapping"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://doctrine-project.org/schemas/orm/doctrine-mapping http://doctrine-project.org/schemas/orm/doctrine-mapping.xsd" >
-  <mapped-superclass name="LineStorm\SearchBundle\Model\TriGraph">
+  <mapped-superclass name="LineStorm\SearchBundle\Model\TriGraph" >
+
+      <field name="triplet" type="string" column="triplet" nullable="false" />
 
   </mapped-superclass>
 </doctrine-mapping>

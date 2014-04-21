@@ -15,24 +15,44 @@ abstract class TriGraph
     /**
      * @var string
      */
-    protected $tuple;
+    protected $triplet;
 
     /**
-     * @param string $tuple
+     * @var object
      */
-    public function setTuple($tuple)
+    protected $entity;
+
+    /**
+     * @param string $triplet
+     */
+    public function setTriplet($triplet)
     {
-        if(strlen($tuple) === 3)
-        {
-            $this->tuple = $tuple;
-        }
+        $this->triplet = $triplet;
     }
 
     /**
      * @return string
      */
-    public function getTuple()
+    public function getTriplet()
     {
-        return $this->tuple;
+        return $this->triplet;
     }
+
+    /**
+     * @param object $entity
+     */
+    public function setEntity($entity)
+    {
+        $this->entity = $entity;
+    }
+
+    /**
+     * @return object
+     */
+    public function getEntity()
+    {
+        return $this->entity;
+    }
+
+
 }

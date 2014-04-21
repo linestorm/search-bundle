@@ -9,18 +9,34 @@ use LineStorm\CmsBundle\Model\ModelManager;
  *
  * @package LineStorm\SearchBundle\Search
  */
-abstract class AbstractSearchProvider
+abstract class AbstractSearchProvider implements SearchProviderInterface
 {
     /**
      * @var ModelManager
      */
     protected $modelManager;
 
+    protected $entityMappings;
+
     /**
-     * @inheritdoc
+     * @param array        $entityMappings
+     * @param ModelManager $modelManager
      */
-    public function setModelManager(ModelManager $modelManager)
+    function __construct(array $entityMappings, ModelManager $modelManager)
     {
-        $this->modelManager = $modelManager;
+        $this->entityMappings = $entityMappings;
+        $this->modelManager   = $modelManager;
     }
+
+    /**
+     * Get the entity mappings
+     *
+     * @return array
+     */
+    public function getEntityMappings()
+    {
+        return $this->entityMappings;
+    }
+
+
 } 

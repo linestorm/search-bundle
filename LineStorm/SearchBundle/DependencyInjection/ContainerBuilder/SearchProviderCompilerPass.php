@@ -24,21 +24,25 @@ class SearchProviderCompilerPass implements CompilerPassInterface
             return;
         }
 
+        $config = $container->getExtensionConfig('line_storm_search');
+        $searchConfig = $config[0];
+
         $definition = $container->getDefinition('linestorm.cms.module.search_manager');
         $taggedServices = $container->findTaggedServiceIds('linestorm.cms.module.search.provider');
 
         foreach ($taggedServices as $id => $attributes)
         {
+
             $definition->addMethodCall(
                 'addSearchProvider',
                 array(new Reference($id))
             );
 
             $provider = $container->getDefinition($id);
-            $provider->addMethodCall(
-                'setModelManager',
-                array(new Reference('linestorm.cms.model_manager'))
-            );
+            $provider->setArguments(array(
+                $searchConfig['entity_mappings'][$attributes[0]['map']],
+                new Reference('linestorm.cms.model_manager'),
+            ));
         }
     }
 } 

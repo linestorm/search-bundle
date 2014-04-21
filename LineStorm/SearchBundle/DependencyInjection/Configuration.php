@@ -23,8 +23,11 @@ class Configuration implements ConfigurationInterface
         $rootNode
             ->addDefaultsIfNotSet()
             ->children()
-                ->arrayNode('orm_providers')
-                    ->prototype('scalar')
+                ->arrayNode('entity_mappings')
+                    ->prototype('array')
+                        ->prototype('array')
+                            ->prototype('scalar')
+                ->end()
                 ->end()
             ->end()
         ;
