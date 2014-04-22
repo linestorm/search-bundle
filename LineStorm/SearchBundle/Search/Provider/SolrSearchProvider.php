@@ -67,9 +67,7 @@ abstract class SolrSearchProvider extends AbstractSearchProvider implements Sear
         $solrRepo = $this->solr->getRepository($repo->getClassName());
 
         $qb = $repo->createQueryBuilder('p');
-        $qb->select('partial p.{id,title,blurb,slug}');
-        $qb->join('p.category', 'c')->addSelect('c');
-        $qb->join('p.tags', 'ta')->addSelect('ta');
+        $this->queryBuilder($qb, 'p');
 
         $result = $solrRepo->createFindBy(array('text' => $query), null, 20, $qb, Query::HYDRATE_ARRAY);
 
