@@ -3,29 +3,30 @@
 namespace LineStorm\SearchBundle\Search\Provider;
 
 use Doctrine\Common\Collections\Collection;
-use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Query;
 use Doctrine\ORM\Query\Expr\Join;
 use Doctrine\ORM\QueryBuilder;
-use LineStorm\SearchBundle\Model\TriGraph;
+use LineStorm\SearchBundle\Model\FullText;
 use LineStorm\SearchBundle\Search\AbstractSearchProvider;
 use LineStorm\SearchBundle\Search\Exception\EntityNotSupportedException;
+use LineStorm\SearchBundle\Search\Exception\FullTextIndexMissingException;
+use LineStorm\SearchBundle\Search\SearchProviderInterface;
 
 /**
- * Class TriGraphSearchProvider
+ * Class MyIsamFullTextSearchProvider
  *
  * @package LineStorm\SearchBundle\Search\Provider
  */
-abstract class TriGraphSearchProvider extends AbstractSearchProvider
+abstract class FullTextSearchProvider extends AbstractSearchProvider implements SearchProviderInterface
 {
     private $rowCount;
 
     /**
      * @inheritdoc
      */
-    final public function getType()
+    public function getType()
     {
-        return 'tri_graph';
+        return 'full_text';
     }
 
     /**
@@ -33,10 +34,7 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
      */
     abstract public function getRoute($entity);
 
-    /**
-     * @inheritdoc
-     */
-    abstract public function getTriGraphModel();
+    abstract public function getIndexModel();
 
     /**
      * @inheritdoc
@@ -51,19 +49,23 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
      */
     public function search($query, $hydration = Query::HYDRATE_OBJECT)
     {
+
         $sqlParts = $this->parseText($query);
 
-        $alias         = 't';
-        $repo          = $this->modelManager->get($this->getModel());
-        $triGraphClass = $this->modelManager->get($this->getTriGraphModel())->getClassName();
-        $qb            = $repo->createQueryBuilder($alias);
+        $alias      = 't';
+        $repo       = $this->modelManager->get($this->getModel());
+        $indexRepo  = $this->modelManager->get($this->getIndexModel());
+        $indexClass = $indexRepo->getClassName();
+        $qb         = $repo->createQueryBuilder($alias);
 
         $this->queryBuilder($qb, $alias);
 
-        foreach($sqlParts as $i => $sqlPart)
-        {
-            $qb->join($triGraphClass, "tri{$i}", Join::WITH, "t = tri{$i}.entity AND tri{$i}.triplet = '{$sqlPart}'");
-        }
+        $search = implode(' ', $sqlParts);
+        $qb
+           ->join($indexClass, "idx", Join::WITH, "t = idx.entity")
+           ->andWhere("MATCH_AGAINST(idx.text, :query 'IN BOOLEAN MODE') > 0.0")
+           ->addGroupBy('t.id')
+           ->setParameter('query', $search);
 
         $query  = $qb->getQuery();
         $result = $query->setMaxResults(20)->getResult($hydration);
@@ -76,9 +78,24 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
      */
     public function index($entities = null)
     {
-        $em      = $this->modelManager->getManager();
-        $repo    = $this->modelManager->get($this->getModel());
-        $triRepo = $this->modelManager->get($this->getTriGraphModel());
+        $em        = $this->modelManager->getManager();
+        $repo      = $this->modelManager->get($this->getModel());
+        $indexRepo = $this->modelManager->get($this->getIndexModel());
+
+        // first, we need to check this is actually fulltext table
+        $rsm = new Query\ResultSetMappingBuilder($em);
+        $rsm->addScalarResult('Index_type', 'type');
+        $rsm->addScalarResult('Key_name', 'key');
+
+        $meta = $em->getClassMetadata($indexRepo->getClassName());
+        $indexName = 'search_text_index';
+        $indexCheck = $em->createNativeQuery("SHOW INDEX FROM {$meta->getTableName()} WHERE KEY_NAME = '{$indexName}' AND Index_type='FULLTEXT'", $rsm);
+        $q = $indexCheck->execute();
+
+        if(!count($q))
+        {
+            throw new FullTextIndexMissingException($meta->getTableName(), $indexName, array('text'));
+        }
 
         $className = $repo->getClassName();
         if($entities instanceof $className)
@@ -98,14 +115,13 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
         {
             $em->beginTransaction();
 
-            /** @var TriGraph $truple */
-            $deleteQb = $triRepo->createQueryBuilder('t');
+            $deleteQb = $indexRepo->createQueryBuilder('t');
             $deleteQb->delete()->where("t.entity = :entity");
             $deleteQb->setParameter(':entity', $entity);
 
             $deleteQb->getQuery()->execute();
-            $triplets = array();
 
+            /** @var FullText $indexEnitiy */
             foreach($this->entityMappings as $field => $properties)
             {
                 if(is_array($properties))
@@ -117,29 +133,28 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
                         {
                             foreach($subEntities as $subEntity)
                             {
-                                $triplets = array_merge($triplets, $this->parseText($subEntity->{"get{$subField}"}()));
+                                $indexEnitiy = $this->modelManager->create($this->getIndexModel());
+                                $indexEnitiy->setEntity($entity);
+                                $indexEnitiy->setText($subEntity->{"get{$subField}"}());
+                                $em->persist($indexEnitiy);
                             }
                         }
                         else
                         {
-                            $triplets = array_merge($triplets, $this->parseText($subEntities->{"get{$subField}"}()));
+                            $indexEnitiy = $this->modelManager->create($this->getIndexModel());
+                            $indexEnitiy->setEntity($entity);
+                            $indexEnitiy->setText($subEntities->{"get{$subField}"}());
+                            $em->persist($indexEnitiy);
                         }
                     }
                 }
                 else
                 {
-                    $triplets = array_merge($triplets, $this->parseText($entity->{"get{$field}"}()));
+                    $indexEnitiy = $this->modelManager->create($this->getIndexModel());
+                    $indexEnitiy->setEntity($entity);
+                    $indexEnitiy->setText($entity->{"get{$field}"}());
+                    $em->persist($indexEnitiy);
                 }
-            }
-
-            $triplets = array_unique($triplets);
-
-            foreach($triplets as $triplet)
-            {
-                $tripletEntity = $this->modelManager->create($this->getTriGraphModel());
-                $tripletEntity->setTriplet($triplet);
-                $tripletEntity->setEntity($entity);
-                $em->persist($tripletEntity);
             }
 
             $em->commit();
@@ -154,11 +169,11 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
     public function remove($entity)
     {
         $em      = $this->modelManager->getManager();
-        $triRepo = $this->modelManager->get($this->getTriGraphModel());
+        $triRepo = $this->modelManager->get($this->getIndexModel());
 
         $em->beginTransaction();
 
-        /** @var TriGraph $truple */
+        /** @var FullText $truple */
         $deleteQb = $triRepo->createQueryBuilder('t');
         $deleteQb->delete()->where("t.entity = :entity");
         $deleteQb->setParameter(':entity', $entity);
@@ -175,9 +190,9 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
     {
         if($this->rowCount === null || !$fromCache)
         {
-            $repo = $this->modelManager->get($this->getTriGraphModel());
+            $repo = $this->modelManager->get($this->getIndexModel());
 
-            $qb             = $repo->createQueryBuilder('tri')->select('count(tri.triplet) as row_count');
+            $qb             = $repo->createQueryBuilder('i')->select('count(i.id) as row_count');
             $this->rowCount = (int)$qb->getQuery()->getSingleScalarResult();
         }
 
@@ -185,7 +200,7 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
     }
 
     /**
-     * Parse a text body into triplets
+     * Parse a text body into tuples
      *
      * @param $text
      *
@@ -202,18 +217,12 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
                 $clean = preg_replace('/[^\w\d]/', '', $part);
                 if(strlen($clean))
                 {
-                    $splits = str_split($clean, 3);
-                    foreach($splits as $split)
-                    {
-                        if(strlen($split) === 3)
-                        {
-                            $sqlParts[] = $split;
-                        }
-                    }
+                    $sqlParts[] = "+{$clean}";
                 }
             }
         }
 
         return $sqlParts;
     }
+
 } 

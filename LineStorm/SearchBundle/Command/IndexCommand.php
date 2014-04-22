@@ -39,7 +39,7 @@ class IndexCommand extends ContainerAwareCommand
 
         foreach($providers as $provider)
         {
-            $output->writeln("Indexing {$provider->getName()}");
+            $output->writeln("Indexing {$provider->getModel()}");
 
             $provider->index();
         }

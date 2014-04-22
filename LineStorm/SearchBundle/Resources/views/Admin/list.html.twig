@@ -27,11 +27,11 @@
     <ul class="list-group">
         {% for provider in providers %}
             <li class="list-group-item">
-                <h3 class="list-group-item-heading">{{ provider.name }}</h3>
+                <h3 class="list-group-item-heading">{{ provider.model }}</h3>
                 <div class="list-group-item-text">
                     <p class="text-muted">
                         <strong>Indexed Fields:</strong>
-                        {% for field,mappings in provider.indexFields %}{{ field }}{% if not loop.last %}, {% endif %}{% endfor %}
+                        {% for field,mappings in provider.entityMappings %}{{ field }}{% if not loop.last %}, {% endif %}{% endfor %}
                     </p>
                     <p class="text-muted">
                         <strong>Row Count:</strong>

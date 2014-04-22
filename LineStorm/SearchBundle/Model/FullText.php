@@ -2,20 +2,24 @@
 
 namespace LineStorm\SearchBundle\Model;
 
-use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
- * Class TriGraph
+ * Class FullText
  *
  * @package LineStorm\SearchBundle\Model
  */
-abstract class TriGraph
+abstract class FullText
 {
+    /**
+     * @var integer
+     */
+    protected $id;
+
     /**
      * @var string
      */
-    protected $triplet;
+    protected $text;
 
     /**
      * @var object
@@ -23,23 +27,31 @@ abstract class TriGraph
     protected $entity;
 
     /**
-     * @param string $triplet
+     * @return int
      */
-    public function setTriplet($triplet)
+    public function getId()
     {
-        $this->triplet = $triplet;
+        return $this->id;
     }
 
     /**
      * @return string
      */
-    public function getTriplet()
+    public function getText()
     {
-        return $this->triplet;
+        return $this->text;
     }
 
     /**
-     * @param object $entity
+     * @param string $text
+     */
+    public function setText($text)
+    {
+        $this->text = $text;
+    }
+
+    /**
+     * @param mixed $entity
      */
     public function setEntity($entity)
     {
@@ -47,7 +59,7 @@ abstract class TriGraph
     }
 
     /**
-     * @return object
+     * @return mixed
      */
     public function getEntity()
     {

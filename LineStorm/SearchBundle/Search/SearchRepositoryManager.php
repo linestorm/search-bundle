@@ -15,7 +15,7 @@ class SearchRepositoryManager
     /**
      * This holds all the mappings of model -> SearchProvider
      *
-     * @var array
+     * @var SearchProviderInterface[]
      */
     protected $searchProviders = array();
 
@@ -25,7 +25,7 @@ class SearchRepositoryManager
      */
     public function addSearchProvider(SearchProviderInterface $searchProvider)
     {
-        $this->searchProviders[$searchProvider->getName()] = $searchProvider;
+        $this->searchProviders[$searchProvider->getModel()] = $searchProvider;
     }
 
     /**

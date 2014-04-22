@@ -12,14 +12,12 @@ use LineStorm\CmsBundle\Model\ModelManager;
  */
 interface SearchProviderInterface
 {
+
     /**
-     * Set the Model Manager
-     *
+     * @param array        $entityMappings
      * @param ModelManager $modelManager
-     *
-     * @return mixed
      */
-    public function setModelManager(ModelManager $modelManager);
+    function __construct(array $entityMappings, ModelManager $modelManager);
 
     /**
      * Return the search provider type
@@ -33,21 +31,21 @@ interface SearchProviderInterface
      *
      * @return string
      */
-    public function getName();
+    public function getModel();
 
     /**
-     * Return an array of fields (as keys) and mappings (as array or fields)
-     *
-     * @return array
-     */
-    public function getIndexFields();
-
-    /**
-     * Gets a cound of all indices
+     * Gets a count of all indices
      *
      * @return int
      */
     public function getCount();
+
+    /**
+     * Get the entity mappings
+     *
+     * @return array
+     */
+    public function getEntityMappings();
 
     /**
      * Search the provider for a query
@@ -62,7 +60,18 @@ interface SearchProviderInterface
     /**
      * Index the target model
      *
+     * @param null|array|object $entities If supplied, will only index this/these entities
+     *
      * @return void
      */
-    public function index();
+    public function index($entities = null);
+
+    /**
+     * Remove an index from the index
+     *
+     * @param object $entity
+     *
+     * @return void
+     */
+    public function remove($entity);
 } 
