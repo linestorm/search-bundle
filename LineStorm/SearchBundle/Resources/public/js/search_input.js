@@ -37,12 +37,12 @@ define(['jquery', 'select2', 'cms_api'], function ($, select2, api) {
                                             html += '<p>'+post.blurb+'</p>';
                                         }
 
-                                        html += '<p><span class="label label-success">'+post.category.name+'</span>';
+                                        html += '<a href="#" class="label label-success">'+post.category.name+'</a>';
 
                                         for(var j=0 ; j < post.tags.length ; ++j){
-                                            html += '<span class="label label-primary">'+post.tags[j].name+'</span>';
+                                            html += '<a href="#" class="label label-primary">'+post.tags[j].name+'</a>';
                                         }
-                                        html += '</p>';
+                                        html += '';
 
                                         $results.append('<div class="results-row">'+html+'</div>');
                                     }

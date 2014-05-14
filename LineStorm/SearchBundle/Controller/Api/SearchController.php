@@ -37,7 +37,7 @@ class SearchController extends AbstractApiController implements ClassResourceInt
 
             if(strlen($query) >= 5)
             {
-                $entities = $provider->search($query);
+                $entities = $provider->search($query, Query::HYDRATE_ARRAY);
 
                 foreach($entities as &$entity)
                 {
