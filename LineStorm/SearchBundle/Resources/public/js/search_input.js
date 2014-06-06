@@ -22,7 +22,7 @@ define(['jquery', 'select2', 'cms_api'], function ($, select2, api) {
                 if(search.value.length >= 3){
                     $spinner.show();
                     lastRequest = search.value;
-                    window.lineStorm.api.call(url, {
+                    api.call(url, {
                         data: { q: search.value },
                         success: function(o){
                             if(lastRequest === search.value){
