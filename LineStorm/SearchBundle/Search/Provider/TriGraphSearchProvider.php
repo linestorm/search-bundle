@@ -96,8 +96,6 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
 
         foreach($entities as $entity)
         {
-            $em->beginTransaction();
-
             /** @var TriGraph $truple */
             $deleteQb = $triRepo->createQueryBuilder('t');
             $deleteQb->delete()->where("t.entity = :entity");
@@ -140,10 +138,9 @@ abstract class TriGraphSearchProvider extends AbstractSearchProvider
                 $tripletEntity->setTriplet($triplet);
                 $tripletEntity->setEntity($entity);
                 $em->persist($tripletEntity);
+                $em->flush($tripletEntity);
             }
 
-            $em->commit();
-            $em->flush();
 
         }
     }

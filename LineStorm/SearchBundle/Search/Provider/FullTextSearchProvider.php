@@ -113,7 +113,6 @@ abstract class FullTextSearchProvider extends AbstractSearchProvider implements 
 
         foreach($entities as $entity)
         {
-            $em->beginTransaction();
 
             $deleteQb = $indexRepo->createQueryBuilder('t');
             $deleteQb->delete()->where("t.entity = :entity");
@@ -157,7 +156,6 @@ abstract class FullTextSearchProvider extends AbstractSearchProvider implements 
                 }
             }
 
-            $em->commit();
             $em->flush();
 
         }
@@ -171,16 +169,12 @@ abstract class FullTextSearchProvider extends AbstractSearchProvider implements 
         $em      = $this->modelManager->getManager();
         $triRepo = $this->modelManager->get($this->getIndexModel());
 
-        $em->beginTransaction();
-
         /** @var FullText $truple */
         $deleteQb = $triRepo->createQueryBuilder('t');
         $deleteQb->delete()->where("t.entity = :entity");
         $deleteQb->setParameter(':entity', $entity);
 
         $deleteQb->getQuery()->execute();
-
-        $em->commit();
     }
 
     /**
